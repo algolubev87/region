@@ -111,7 +111,7 @@ function csv_to_array($filename = '', $delimiter = ',') {
             if (!$header) {
                 $header = $row;
             } else {
-                          $data[] =  $row;
+                $data[] = $row;
             }
         }
         fclose($handle);
@@ -152,13 +152,14 @@ groupArraysByRules($array1, $array2, null, true);
 
 //var_dump($array1);
 $resultArray = $array1;
-echo '<table>
+if (is_array($resultArray) && count($resultArray)) {
+    echo '<table>
     <th>сравниваемый параметр</th>
     <th>значение в файле №1</th>
     <th>значение в файле №2</th>';
-printResult($resultArray);
-echo '</table>';
-
+    printResult($resultArray);
+    echo '</table>';
+}
 echo '<pre>';
 
 //var_dump($array1);
@@ -237,8 +238,8 @@ function groupArraysByRules(&$array1, $array2, $keyName1 = '', $executeCompare =
 //                            var_dump($value2);
 //                    foreach ($value1 as $keyNF => $valueNF) {
 //                        if (is_array($valueNF) && count($valueNF)) {
-//                            
-//                            
+//
+//
 ////                            foreach ($valueNF as $keyNF2 => $valueNF2) {
 ////
 ////                                $value2[$keyNF][$keyNF2] = 'VVVVV';
@@ -290,85 +291,90 @@ function section3decoding($array) {
     $result = [];
     if (is_array($array) && count($array)) {
         foreach ($array as $key1 => $value1) {
-            if (is_array($value1) && count($value1)) {
-                foreach ($value1 as $keyLEV2 => $valueLEV2) {
-                    if (is_array($valueLEV2) && count($valueLEV2)) {
-                        foreach ($valueLEV2 as $keyLEV3 => $valueLEV3) {
-                            $counter = 0;
-                            foreach ($valueLEV3 as $keyLEV4 => $valueLEV4) {
-                                if (is_array($valueLEV3) && count($valueLEV3)) {
-                                    $checkKeysForISIN = FALSE;
-                                    if (is_array($valueLEV4) && count($valueLEV4)) {
-                                        foreach (array_keys($valueLEV4) as $innerKey => $ISIN) {
-                                            if (strpos($ISIN, 'КодISIN') !== FALSE) {
-                                                $checkKeysForISIN = $ISIN;
-                                                $isinCode = $valueLEV4[$checkKeysForISIN];
-                                                $isinCodeOriginal = $valueLEV4[$checkKeysForISIN];
-                                                if (isset($value1[$keyLEV2][$keyLEV3][$valueLEV4[$checkKeysForISIN]])) {
-                                                    $counter++;
-                                                    $isinCode = $isinCode . '-----' . $counter;
+//            die(var_dump($key1));
+
+            if ($key1 == 'Подраздел2_ЦенБумРосЭмитент' || $key1 == 'Подраздел3ЦенБумИнострЭмит' || $key1 == 'Подраздел3ЦенБумИнострЭмит'
+            ) {
+                if (is_array($value1) && count($value1)) {
+                    foreach ($value1 as $keyLEV2 => $valueLEV2) {
+                        if (is_array($valueLEV2) && count($valueLEV2)) {
+                            foreach ($valueLEV2 as $keyLEV3 => $valueLEV3) {
+                                $counter = 0;
+                                foreach ($valueLEV3 as $keyLEV4 => $valueLEV4) {
+                                    if (is_array($valueLEV3) && count($valueLEV3)) {
+                                        $checkKeysForISIN = FALSE;
+                                        if (is_array($valueLEV4) && count($valueLEV4)) {
+                                            foreach (array_keys($valueLEV4) as $innerKey => $ISIN) {
+                                                if (strpos($ISIN, 'КодISIN') !== FALSE) {
+                                                    $checkKeysForISIN = $ISIN;
+                                                    $isinCode = $valueLEV4[$checkKeysForISIN];
+                                                    $isinCodeOriginal = $valueLEV4[$checkKeysForISIN];
+                                                    if (isset($value1[$keyLEV2][$keyLEV3][$valueLEV4[$checkKeysForISIN]])) {
+                                                        $counter++;
+                                                        $isinCode = $isinCode . '-----' . $counter;
 //                                                                var_dump($valueLEV5);
 //                                                    echo $counter;
 //                                                                echo $checkKeysForISIN;
 //                                                    echo '<br>';
-                                                } else {
-                                                    $counter = 0;
-                                                }
-                                                $value1[$keyLEV2][$keyLEV3][$isinCode] = $array[$key1][$keyLEV2][$keyLEV3][$keyLEV4];
-                                                $value1[$keyLEV2][$keyLEV3][$valueLEV4[$checkKeysForISIN]]['isISIN'] = true;
-                                                if ($counter > 0) {
-                                                    $value1[$keyLEV2][$keyLEV3][$isinCode]['это дубль'] = 'да';
-                                                    $value1[$keyLEV2][$keyLEV3][$isinCode]['Очень похож на'] = $isinCodeOriginal;
-                                                }
+                                                    } else {
+                                                        $counter = 0;
+                                                    }
+                                                    $value1[$keyLEV2][$keyLEV3][$isinCode] = $array[$key1][$keyLEV2][$keyLEV3][$keyLEV4];
+                                                    $value1[$keyLEV2][$keyLEV3][$valueLEV4[$checkKeysForISIN]]['isISIN'] = true;
+                                                    if ($counter > 0) {
+                                                        $value1[$keyLEV2][$keyLEV3][$isinCode]['это дубль'] = 'да';
+                                                        $value1[$keyLEV2][$keyLEV3][$isinCode]['Очень похож на'] = $isinCodeOriginal;
+                                                    }
 //                                                echo $keyLEV3;
-                                                $value1[$keyLEV2][$keyLEV3]['containsISIN'][$isinCode] = $valueLEV4[$checkKeysForISIN];
-                                                if (isset($value1[$keyLEV2][$keyLEV3][$keyLEV4])) {
-                                                    unset($value1[$keyLEV2][$keyLEV3][$keyLEV4]);
+                                                    $value1[$keyLEV2][$keyLEV3]['containsISIN'][$isinCode] = $valueLEV4[$checkKeysForISIN];
+                                                    if (isset($value1[$keyLEV2][$keyLEV3][$keyLEV4])) {
+                                                        unset($value1[$keyLEV2][$keyLEV3][$keyLEV4]);
+                                                    }
                                                 }
-                                            }
 //                                            var_dump($value1[$keyLEV2][$keyLEV3]);
 //                                                asort($value1[$keyLEV2][$keyLEV3]);
+                                            }
                                         }
-                                    }
-                                    if ($checkKeysForISIN === FALSE && is_array($valueLEV4) && count($valueLEV4)) {
-                                        $counter = 0;
-                                        foreach ($valueLEV4 as $keyLEV5 => $valueLEV5) {
-                                            if (is_array($valueLEV4) && count($valueLEV4)) {
-                                                $checkKeysForISIN = FALSE;
-                                                if (is_array($valueLEV5) && count($valueLEV5)) {
-                                                    foreach (array_keys($valueLEV5) as $innerKey => $ISIN) {
-                                                        if (strpos($ISIN, 'КодISIN') !== FALSE) {
-                                                            $checkKeysForISIN = $ISIN;
-                                                            $isinCode = $valueLEV5[$checkKeysForISIN];
-                                                            $isinCodeOriginal = $valueLEV5[$checkKeysForISIN];
-                                                            if (isset($value1[$keyLEV2][$keyLEV3][$keyLEV4][$valueLEV5[$checkKeysForISIN]])) {
-                                                                $counter++;
-                                                                $isinCode = $isinCode . '-----' . $counter;
+                                        if ($checkKeysForISIN === FALSE && is_array($valueLEV4) && count($valueLEV4)) {
+                                            $counter = 0;
+                                            foreach ($valueLEV4 as $keyLEV5 => $valueLEV5) {
+                                                if (is_array($valueLEV4) && count($valueLEV4)) {
+                                                    $checkKeysForISIN = FALSE;
+                                                    if (is_array($valueLEV5) && count($valueLEV5)) {
+                                                        foreach (array_keys($valueLEV5) as $innerKey => $ISIN) {
+                                                            if (strpos($ISIN, 'КодISIN') !== FALSE) {
+                                                                $checkKeysForISIN = $ISIN;
+                                                                $isinCode = $valueLEV5[$checkKeysForISIN];
+                                                                $isinCodeOriginal = $valueLEV5[$checkKeysForISIN];
+                                                                if (isset($value1[$keyLEV2][$keyLEV3][$keyLEV4][$valueLEV5[$checkKeysForISIN]])) {
+                                                                    $counter++;
+                                                                    $isinCode = $isinCode . '-----' . $counter;
 //                                                                var_dump($valueLEV5);
 //                                                                echo $counter;
 //                                                                echo $checkKeysForISIN;
 //                                                                echo '<br>';
-                                                            } else {
-                                                                $counter = 0;
-                                                            }
+                                                                } else {
+                                                                    $counter = 0;
+                                                                }
 //                                                            $checkKeysForISIN=$checkKeysForISIN.'-----'.$counter;
 //                                                            }
 //                                                                var_dump($valueLEV5[$checkKeysForISIN]);
-                                                            $value1[$keyLEV2][$keyLEV3][$keyLEV4][$isinCode] = $array[$key1][$keyLEV2][$keyLEV3][$keyLEV4][$keyLEV5];
+                                                                $value1[$keyLEV2][$keyLEV3][$keyLEV4][$isinCode] = $array[$key1][$keyLEV2][$keyLEV3][$keyLEV4][$keyLEV5];
 //                                                            die(var_dump($value1[$keyLEV2][$keyLEV3][$keyLEV4]));
-                                                            $value1[$keyLEV2][$keyLEV3][$keyLEV4][$valueLEV5[$checkKeysForISIN]]['isISIN'] = true;
-                                                            if ($counter > 0) {
-                                                                $value1[$keyLEV2][$keyLEV3][$keyLEV4][$isinCode]['это дубль'] = 'да';
-                                                                $value1[$keyLEV2][$keyLEV3][$keyLEV4][$isinCode]['Очень похож на'] = $isinCodeOriginal;
-                                                            }
-                                                            $value1[$keyLEV2][$keyLEV3][$keyLEV4]['containsISIN'][$isinCode] = $valueLEV5[$checkKeysForISIN];
+                                                                $value1[$keyLEV2][$keyLEV3][$keyLEV4][$valueLEV5[$checkKeysForISIN]]['isISIN'] = true;
+                                                                if ($counter > 0) {
+                                                                    $value1[$keyLEV2][$keyLEV3][$keyLEV4][$isinCode]['это дубль'] = 'да';
+                                                                    $value1[$keyLEV2][$keyLEV3][$keyLEV4][$isinCode]['Очень похож на'] = $isinCodeOriginal;
+                                                                }
+                                                                $value1[$keyLEV2][$keyLEV3][$keyLEV4]['containsISIN'][$isinCode] = $valueLEV5[$checkKeysForISIN];
 
-                                                            if (isset($value1[$keyLEV2][$keyLEV3][$keyLEV4][$keyLEV5])) {
-                                                                unset($value1[$keyLEV2][$keyLEV3][$keyLEV4][$keyLEV5]);
+                                                                if (isset($value1[$keyLEV2][$keyLEV3][$keyLEV4][$keyLEV5])) {
+                                                                    unset($value1[$keyLEV2][$keyLEV3][$keyLEV4][$keyLEV5]);
+                                                                }
                                                             }
                                                         }
-                                                    }
 //                                                            asort($value1[$keyLEV2][$keyLEV3][$keyLEV4]);
+                                                    }
                                                 }
                                             }
                                         }
@@ -378,6 +384,8 @@ function section3decoding($array) {
                         }
                     }
                 }
+            } else {
+
             }
 
             $result[$key1] = $value1;
@@ -394,6 +402,7 @@ function section8decoding($array) {
 //    return $result;
     if (is_array($array) && count($array)) {
         foreach ($array as $key1 => $value1) {
+            die(var_dump($key1));
             if (is_array($value1) && count($value1)) {
                 foreach ($value1 as $keyLEV2 => $valueLEV2) {
 //                    asort($valueLEV2);
@@ -526,15 +535,15 @@ function srtringsIdentical($str1, $str2) {
         ,
         'Дивиденды начисленные'
     );
-    
-    
-    $encodedCurrentVocab=getExternalVocab();
+
+
+    $encodedCurrentVocab = getExternalVocab();
     foreach ($encodedCurrentVocab as $value) {
 //        var_dump($value);
 //        die(print_r(mb_convert_encoding($value[0],"utf-8")));
 //        die(print_r(mb_convert_encoding($value[0],'UTF-8',  mb_detect_encoding($value[0]))));
-        $vocabularySRC[]=$value[0];
-        $vocabularyDEST[]=$value[1];
+        $vocabularySRC[] = $value[0];
+        $vocabularyDEST[] = $value[1];
     }
 //die(var_dump($vocabularyDEST));
     $str1 = trim($str1);
@@ -634,10 +643,10 @@ function compareString($string1, $string2, $key1) {
 //        $string2 = preg_replace('/\s{2,}/', ' ', $string2);
 //        $string1 = preg_replace('/00.00.0000/', 'не установлена', $string1);
 //
-//        
-//        
-//        
-//        
+//
+//
+//
+//
 //        if ($string1) == ($string2)) {
 //            $result['diff'] = 'identical';
 //        }else {
