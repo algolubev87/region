@@ -404,7 +404,6 @@ function section3decoding($array) {
                                                                     } else {
                                                                         $counter = 0;
                                                                     }
-                                                                    var_dump($summValue);
                                                                     $value1[$keyLEV2][$keyLEV3][$keyLEV4][$summValue] = $array[$key1][$keyLEV2][$keyLEV3][$keyLEV4][$keyLEV5];
                                                                     $value1[$keyLEV2][$keyLEV3][$keyLEV4][$valueLEV5[$checkKeysForSumm]]['Группировка по Стоимость'] = true;
                                                                     $value1[$keyLEV2][$keyLEV3][$keyLEV4][$summValue]['Группировка по Стоимость'] = true;
