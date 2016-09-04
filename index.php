@@ -221,7 +221,7 @@ function printDiffs($diffsArray) {
                         foreach ($valueRes['valueFromFile1'] as $key1 => $value1) {
 
                             if ($key1 == 'File') {
-                                echo '<tr class="different"><td>' . $valueRes['key'] . '</td><td>' . (strlen($value1) > 50 ? 'есть прикрепленный файл' : 'нет файла') . '</td><td>' . (strlen($valueRes['valueFromFile2'][$key1]) > 50 ? 'есть прикрепленный файл' : 'нет файла') . '</td><tr>';
+                                echo '<tr class="different"><td>' . $valueRes['key'] . '</td><td>' . (!is_array($value1)&& strlen($value1) > 50 ? 'есть прикрепленный файл' : 'нет файла') . '</td><td>' . (!is_array($valueRes['valueFromFile2'][$key1])&& strlen($valueRes['valueFromFile2'][$key1]) > 50 ? 'есть прикрепленный файл' : 'нет файла') . '</td><tr>';
                             } else {
                                 echo '<tr class="superDifferent"><td>' . $key1 . '</td>' . '<td>';
                                 if (is_array($value1)) {
