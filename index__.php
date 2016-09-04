@@ -265,7 +265,7 @@ function compareArrays($array1, $array2, $keyName1 = '', $executeCompare = false
     }
 }
 
-function section3decoding($array) {
+function section3RasshifrovkaDecoding($array) {
     $result = [];
     if (is_array($array) && count($array)) {
         foreach ($array as $key1 => $value1) {

@@ -89,7 +89,7 @@ function groupArraysByRules(&$array1, $array2, $keyName1 = '', $executeCompare =
                 if ($key1 == 'РасшифровкиРаздела3') {
                     if (is_array($value1) && count($value1)) {
                         if ($executeCompare !== TRUE) {
-                            $value1 = section3decoding($value1);
+                            $value1 = section3RasshifrovkaDecoding($value1);
                         }
                     }
                 }

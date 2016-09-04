@@ -1,14 +1,3 @@
-<form method="POST" name="111" enctype="multipart/form-data">
-    <label for="file1input">файл с данными от УК
-        <input id="file1input" type="file" name="file1" placeholder="файл с данными от УК"></label><hr>
-    <label for="file2input">файл с данными СПЕЦДЕПА
-        <input id="file2input" type="file" name="file2" placeholder="файл с данными СПЕЦДЕПА"></label><hr>
-
-    <button id="submitInput" type="submit">Запустить проверку</button>
-    <br>
-    <a href="/manageVocab.php" target="_blank">Словарь соответствий</a>
-    <br>
-</form>
 <style>
     .commonDiv div{
         display: inline-block;
@@ -23,6 +12,9 @@
         background-color: bisque;
     }
     .different{
+        background-color: #ffbfbf;
+    }
+    .superDifferent{
         background-color: #ffbfbf;
     }
     .identical{
@@ -46,28 +38,40 @@
     table > td {
         width: 30%;
     }
+    #version{
+        background-color: lightgray;
+        width: 10%;
+        position: absolute;
+        top: 0;
+        right: 0;
+    }
 </style>
+<div id="version">v.1.2 04.09.2016</div>
+<form method="POST" name="111" enctype="multipart/form-data">
+    <label for="file1input">файл с данными от УК
+        <input id="file1input" type="file" name="file1" placeholder="файл с данными от УК"></label><hr>
+    <label for="file2input">файл с данными СПЕЦДЕПА
+        <input id="file2input" type="file" name="file2" placeholder="файл с данными СПЕЦДЕПА"></label><hr>
 
+    <button id="submitInput" type="submit">Запустить проверку</button>
+    <br>
+    <a href="/manageVocab.php" target="_blank">Словарь соответствий</a>
+    <br>
+</form>
 <?php
-//header('Content-Type: text/html; charset=utf-8');
 echo '<pre>';
 
-
 $filename1 = '';
-//$filename1 = 'uploads/file1.xtdd';
 
 if (isset($_FILES['file1']['tmp_name'])) {
     $filename1 = $_FILES['file1']['tmp_name'];
 }
 $filename2 = '';
-//$filename1 = 'uploads/file1.xtdd';
 
 if (isset($_FILES['file2']['tmp_name'])) {
     $filename2 = $_FILES['file2']['tmp_name'];
 }
-
 if (!$filename1 == '') {
-//    die(var_dump($filename1));
     if (file_exists($filename1)) {
 
         $fileContent1 = file_get_contents($filename1);
@@ -78,7 +82,6 @@ if (!$filename1 == '') {
     die('Не выбран файл 1');
 }
 if (!$filename2 == '') {
-//    die(var_dump($filename2));
     if (file_exists($filename2)) {
 
         $fileContent2 = file_get_contents($filename2);
@@ -93,10 +96,9 @@ function getExternalVocab() {
     $result = [];
     $currentVocabFileNames = glob('./vocab/*.csv');
     if (is_array($currentVocabFileNames) && count($currentVocabFileNames)) {
-        $currentVocabFileName = $currentVocabFileNames[0];
-        $result = csv_to_array($currentVocabFileName, ';');
+        $currentVocabFileName = array_pop($currentVocabFileNames);
+        $result = csv_to_array($currentVocabFileName, '~');
     }
-
     return $result;
 }
 
@@ -116,23 +118,16 @@ function csv_to_array($filename = '', $delimiter = ',') {
         }
         fclose($handle);
     }
-//  var_dump($row);
-//    die(var_dump($data));
     return $data;
 }
 
-//die(var_dump($encodedCurrentVocab));
-
 $fileContent1 = preg_replace('/<av:ОКУД0420502[^>]+>+/', '<av:ОКУД0420502>', $fileContent1);
 $fileContent1 = preg_replace('/<([\\/])av:ОКУД0420502[^>]?>+/', '</av:ОКУД0420502>', $fileContent1);
-//print_r($fileContent1);
-//die();
 $fileContent1 = preg_replace('\'<av:\'', '<', $fileContent1);
 $fileContent1 = preg_replace('\'</av:\'', '</', $fileContent1);
 $xml1 = simplexml_load_string($fileContent1);
 $json1 = json_encode($xml1);
 $array1 = json_decode($json1, TRUE);
-$filename2 = 'uploads/file2.xtdd';
 $fileContent2 = preg_replace('/<av:ОКУД0420502[^>]+>+/', '<av:ОКУД0420502>', $fileContent2);
 $fileContent2 = preg_replace('/<([\\/])av:ОКУД0420502[^>]?>+/', '</av:ОКУД0420502>', $fileContent2);
 $fileContent2 = preg_replace('\'<av:\'', '<', $fileContent2);
@@ -142,43 +137,44 @@ $json2 = json_encode($xml2);
 $array2 = json_decode($json2, TRUE);
 $resultArray1 = [];
 $resultArray2 = [];
-
-//die(var_dump($fileContent1));
 echo '<pre>';
-//die();
+$diffsArray = [];
 groupArraysByRules($array1, $array2);
 groupArraysByRules($array2, $array1);
+getDiffsBetweenArrays($array1, $array2, 1, 2);
+getDiffsBetweenArrays($array2, $array1, 2, 1);
 groupArraysByRules($array1, $array2, null, true);
-
-//var_dump($array1);
 $resultArray = $array1;
 if (is_array($resultArray) && count($resultArray)) {
     echo '<table>
     <th>сравниваемый параметр</th>
     <th>значение в файле №1</th>
-    <th>значение в файле №2</th>';
+    <th>значение в файле №2</th><tr>
+    <th>имя файла</th>
+    <th>' . $_FILES['file1']['name'] . '</th>
+    <th>' . $_FILES['file2']['name'] . '</th>
+    </tr>
+    ';
+    if (is_array($diffsArray) && count($diffsArray)) {
+        printDiffs($diffsArray, null, null);
+    }
     printResult($resultArray);
+
     echo '</table>';
 }
 echo '<pre>';
 
-//var_dump($array1);
-//var_dump($array2);
-
 function printResult($resultArray) {
 
     foreach ($resultArray as $keyRes => $valueRes) {
-//        var_dump($valueRes['header']);
         if (!isset($valueRes['isNotHeader'])) {
-
-//            echo '<tr><td colspan="3">' . $keyRes . '</td></tr>';
+            
         }
         if (is_array($valueRes)) {
             if (count($valueRes)) {
                 if (!isset($valueRes['diff'])) {
-                    if (isset($valueRes['isISIN'])) {
+                    if (isset($valueRes['Группировка по ISIN']) || isset($valueRes['Группировка по сумме']) || isset($valueRes['Группировка по кадастровому номеру']) || isset($valueRes['Группировка по ОГРН']) || isset($valueRes['Группировка по сумме кредиторской задолженности']) || isset($valueRes['Группировка по Стоимость'])) {
                         if ($keyRes == 'File') {
-
                             echo '<tr class="ISINheader"><td colspan="3">' . $keyRes . '</td><tr>';
                         } else {
                             echo '<tr class="ISINheader"><td colspan="3">' . $keyRes . '</td><tr>';
@@ -190,19 +186,15 @@ function printResult($resultArray) {
 
 
                     if (isset($valueRes['diff'])) {
-                        if ($keyRes != 'isISIN') {
+                        if ($keyRes != 'Группировка по ISIN' && $keyRes != 'Группировка по сумме' && $keyRes != 'Группировка по кадастровому номеру' && $keyRes != 'Группировка по ОГРН' && $keyRes != 'Группировка по сумме кредиторской задолженности' && $keyRes != 'Группировка по Стоимость'
+                        ) {
                             if ($keyRes == 'File') {
                                 echo '<tr class="' . $valueRes['diff'] . '"><td>' . $keyRes . '</td><td>' . (strlen($valueRes['value1']) > 50 ? 'есть прикрепленный файл' : 'нет файла') . '</td><td>' . (strlen($valueRes['value2']) > 50 ? 'есть прикрепленный файл' : 'нет файла') . '</td><tr>';
-//                                die(var_dump(strlen($valueRes['value1'])));
                             } else {
-//                                var_dump(mb_detect_encoding($valueRes['value1']));
-//                                var_dump($valueRes['value1']);
-//                                echo '<hr>';
                                 echo '<tr class="' . $valueRes['diff'] . '"><td>' . $keyRes . '</td><td>' . $valueRes['value1'] . '</td><td>' . $valueRes['value2'] . '</td><tr>';
                             }
                         }
                     }
-//                    }
                 }
             } else {
                 if ($keyRes != 'File') {
@@ -213,43 +205,91 @@ function printResult($resultArray) {
     }
 }
 
+function printDiffs($diffsArray) {
+
+    echo '<tr><td colspan="3">НАЧАЛО ТАБЛИЦЫ РАЗЛИЧИЙ</td></tr>';
+    foreach ($diffsArray as $keyRes => $valueRes) {
+        if (is_array($valueRes)) {
+            if (count($valueRes)) {
+                if (isset($valueRes['key'])) {
+
+
+                    echo '<tr class="superDifferent"><td colspan="3">' . $valueRes['key'] . '</td></tr>';
+                }
+                if (isset($valueRes['valueFromFile1']) && is_array($valueRes['valueFromFile1']) && count($valueRes['valueFromFile1'])) {
+                    if (isset($valueRes['valueFromFile2']) && is_array($valueRes['valueFromFile2']) && count($valueRes['valueFromFile2'])) {
+                        foreach ($valueRes['valueFromFile1'] as $key1 => $value1) {
+
+                            if ($key1 == 'File') {
+                                echo '<tr class="different"><td>' . $valueRes['key'] . '</td><td>' . (strlen($value1) > 50 ? 'есть прикрепленный файл' : 'нет файла') . '</td><td>' . (strlen($valueRes['valueFromFile2'][$key1]) > 50 ? 'есть прикрепленный файл' : 'нет файла') . '</td><tr>';
+                            } else {
+                                echo '<tr class="superDifferent"><td>' . $key1 . '</td>' . '<td>';
+                                if (is_array($value1)) {
+                                    echo 'ТАМ ЕСТЬ ВЛОЖЕННЫЕ СТРОКИ';
+                                } else {
+                                    echo $value1;
+                                }
+                                echo '</td>' . '<td>';
+                                if (is_array($valueRes['valueFromFile2'][$key1])) {
+                                    echo 'ТАМ ЕСТЬ ВЛОЖЕННЫЕ СТРОКИ';
+                                } else {
+                                    echo $valueRes['valueFromFile2'][$key1];
+                                }
+                                echo '</td>' . '</tr>';
+                            }
+                        }
+                    }
+                }
+            } else {
+                echo '<tr><td>' . $keyRes . '</td><td>' . $valueRes['valueFromFile1'] . '</td><td>' . $valueRes['valueFromFile2'] . '</td></tr>';
+            }
+        }
+    }
+    echo '<tr><td colspan="3">КОНЕЦ ТАБЛИЦЫ РАЗЛИЧИЙ</td></tr>';
+}
+
 function createSkeletonCopy(&$resource) {
-//    die(var_dump($resource));
     $resource = 'нет значения';
 }
 
-function groupArraysByRules(&$array1, $array2, $keyName1 = '', $executeCompare = false) {
-//    if ($executeCompare === TRUE) {
-////        var_dump($executeCompare);
-//    }
-
-    foreach ($array1 as $key1 => &$value1) {
-//        if ($executeCompare === TRUE) {
-////            var_dump($key1);
-//        }
+function getDiffsBetweenArrays($array1, $array2, $fileIdNow = 0, $fileIdSrc = 0) {
+    foreach ($array1 as $key1 => $value1) {
         if (is_array($value1)) {
             if (count($value1)) {
-//                if ($executeCompare === TRUE) {
                 if (isset($array2[$key1])) {
                     $value2 = $array2[$key1];
                 } else {
                     $value2 = $value1;
                     array_walk_recursive($value2, 'createSkeletonCopy');
-//                            var_dump($value2);
-//                    foreach ($value1 as $keyNF => $valueNF) {
-//                        if (is_array($valueNF) && count($valueNF)) {
-//
-//
-////                            foreach ($valueNF as $keyNF2 => $valueNF2) {
-////
-////                                $value2[$keyNF][$keyNF2] = 'VVVVV';
-////                            }
-//                        } else {
-//                            $value2[$keyNF] = 'XXXXX';
-//                        }
-//                    }
-//                        $value1['notFoundInarray2'] = $key1;
-//                    }
+                    if (isset($fileIdNow) && $fileIdNow > 0) {
+                        if (isset($fileIdSrc) && $fileIdSrc > 0) {
+                            global $diffsArray;
+                            $diffsArray[] = array(
+                                'key' => $key1,
+                                'valueFromFile' . $fileIdNow => $value1,
+                                'valueFromFile' . $fileIdSrc => $value2
+                            );
+                        }
+                    }
+                }
+                getDiffsBetweenArrays($value1, $value2, $fileIdNow, $fileIdSrc);
+            } else {
+                $value1[$key1] = 'пустой';
+            }
+        }
+    }
+}
+
+function groupArraysByRules(&$array1, $array2, $keyName1 = '', $executeCompare = false) {
+    foreach ($array1 as $key1 => &$value1) {
+        if (is_array($value1)) {
+            if (count($value1)) {
+                if (isset($array2[$key1])) {
+
+                    $value2 = $array2[$key1];
+                } else {
+                    $value2 = $value1;
+                    array_walk_recursive($value2, 'createSkeletonCopy');
                 }
                 if ($key1 == 'РасшифровкиРаздела3') {
                     if (is_array($value1) && count($value1)) {
@@ -258,11 +298,10 @@ function groupArraysByRules(&$array1, $array2, $keyName1 = '', $executeCompare =
                         }
                     }
                 }
-                if ($key1 == 'Подраздел8ДебиторскаяЗадолж') {
-//                    die(var_dump($value1));
+                if ($key1 == 'РасшифровкиРаздела4') {
                     if (is_array($value1) && count($value1)) {
                         if ($executeCompare !== TRUE) {
-                            $value1 = section8decoding($value1);
+                            $value1 = section4decoding($value1);
                         }
                     }
                 }
@@ -291,9 +330,7 @@ function section3decoding($array) {
     $result = [];
     if (is_array($array) && count($array)) {
         foreach ($array as $key1 => $value1) {
-//            die(var_dump($key1));
-
-            if ($key1 == 'Подраздел2_ЦенБумРосЭмитент' || $key1 == 'Подраздел3ЦенБумИнострЭмит' || $key1 == 'Подраздел3ЦенБумИнострЭмит'
+            if ($key1 == 'Подраздел2_ЦенБумРосЭмитент' || $key1 == 'Подраздел3ЦенБумИнострЭмит'
             ) {
                 if (is_array($value1) && count($value1)) {
                     foreach ($value1 as $keyLEV2 => $valueLEV2) {
@@ -312,27 +349,20 @@ function section3decoding($array) {
                                                     if (isset($value1[$keyLEV2][$keyLEV3][$valueLEV4[$checkKeysForISIN]])) {
                                                         $counter++;
                                                         $isinCode = $isinCode . '-----' . $counter;
-//                                                                var_dump($valueLEV5);
-//                                                    echo $counter;
-//                                                                echo $checkKeysForISIN;
-//                                                    echo '<br>';
                                                     } else {
                                                         $counter = 0;
                                                     }
                                                     $value1[$keyLEV2][$keyLEV3][$isinCode] = $array[$key1][$keyLEV2][$keyLEV3][$keyLEV4];
-                                                    $value1[$keyLEV2][$keyLEV3][$valueLEV4[$checkKeysForISIN]]['isISIN'] = true;
+                                                    $value1[$keyLEV2][$keyLEV3][$valueLEV4[$checkKeysForISIN]]['Группировка по ISIN'] = true;
+                                                    $value1[$keyLEV2][$keyLEV3][$isinCode]['Группировка по ISIN'] = true;
                                                     if ($counter > 0) {
                                                         $value1[$keyLEV2][$keyLEV3][$isinCode]['это дубль'] = 'да';
                                                         $value1[$keyLEV2][$keyLEV3][$isinCode]['Очень похож на'] = $isinCodeOriginal;
                                                     }
-//                                                echo $keyLEV3;
-                                                    $value1[$keyLEV2][$keyLEV3]['containsISIN'][$isinCode] = $valueLEV4[$checkKeysForISIN];
                                                     if (isset($value1[$keyLEV2][$keyLEV3][$keyLEV4])) {
                                                         unset($value1[$keyLEV2][$keyLEV3][$keyLEV4]);
                                                     }
                                                 }
-//                                            var_dump($value1[$keyLEV2][$keyLEV3]);
-//                                                asort($value1[$keyLEV2][$keyLEV3]);
                                             }
                                         }
                                         if ($checkKeysForISIN === FALSE && is_array($valueLEV4) && count($valueLEV4)) {
@@ -349,31 +379,46 @@ function section3decoding($array) {
                                                                 if (isset($value1[$keyLEV2][$keyLEV3][$keyLEV4][$valueLEV5[$checkKeysForISIN]])) {
                                                                     $counter++;
                                                                     $isinCode = $isinCode . '-----' . $counter;
-//                                                                var_dump($valueLEV5);
-//                                                                echo $counter;
-//                                                                echo $checkKeysForISIN;
-//                                                                echo '<br>';
                                                                 } else {
                                                                     $counter = 0;
                                                                 }
-//                                                            $checkKeysForISIN=$checkKeysForISIN.'-----'.$counter;
-//                                                            }
-//                                                                var_dump($valueLEV5[$checkKeysForISIN]);
                                                                 $value1[$keyLEV2][$keyLEV3][$keyLEV4][$isinCode] = $array[$key1][$keyLEV2][$keyLEV3][$keyLEV4][$keyLEV5];
-//                                                            die(var_dump($value1[$keyLEV2][$keyLEV3][$keyLEV4]));
-                                                                $value1[$keyLEV2][$keyLEV3][$keyLEV4][$valueLEV5[$checkKeysForISIN]]['isISIN'] = true;
+                                                                $value1[$keyLEV2][$keyLEV3][$keyLEV4][$valueLEV5[$checkKeysForISIN]]['Группировка по ISIN'] = true;
+                                                                $value1[$keyLEV2][$keyLEV3][$keyLEV4][$isinCode]['Группировка по ISIN'] = true;
                                                                 if ($counter > 0) {
                                                                     $value1[$keyLEV2][$keyLEV3][$keyLEV4][$isinCode]['это дубль'] = 'да';
                                                                     $value1[$keyLEV2][$keyLEV3][$keyLEV4][$isinCode]['Очень похож на'] = $isinCodeOriginal;
                                                                 }
-                                                                $value1[$keyLEV2][$keyLEV3][$keyLEV4]['containsISIN'][$isinCode] = $valueLEV5[$checkKeysForISIN];
 
                                                                 if (isset($value1[$keyLEV2][$keyLEV3][$keyLEV4][$keyLEV5])) {
                                                                     unset($value1[$keyLEV2][$keyLEV3][$keyLEV4][$keyLEV5]);
                                                                 }
+                                                            } else {
+                                                                if (strpos($ISIN, 'Стоимость') !== FALSE) {
+                                                                    $checkKeysForSumm = $ISIN;
+                                                                    $summValue = $valueLEV5[$checkKeysForSumm];
+                                                                    $summValueOriginal = $valueLEV5[$checkKeysForSumm];
+                                                                    if (isset($value1[$keyLEV2][$keyLEV3][$keyLEV4][$valueLEV5[$checkKeysForSumm]])) {
+                                                                        $counter++;
+                                                                        $summValue = $summValue . '-----' . $counter;
+                                                                    } else {
+                                                                        $counter = 0;
+                                                                    }
+                                                                    var_dump($summValue);
+                                                                    $value1[$keyLEV2][$keyLEV3][$keyLEV4][$summValue] = $array[$key1][$keyLEV2][$keyLEV3][$keyLEV4][$keyLEV5];
+                                                                    $value1[$keyLEV2][$keyLEV3][$keyLEV4][$valueLEV5[$checkKeysForSumm]]['Группировка по Стоимость'] = true;
+                                                                    $value1[$keyLEV2][$keyLEV3][$keyLEV4][$summValue]['Группировка по Стоимость'] = true;
+                                                                    if ($counter > 0) {
+                                                                        $value1[$keyLEV2][$keyLEV3][$keyLEV4][$summValue]['это дубль'] = 'да';
+                                                                        $value1[$keyLEV2][$keyLEV3][$keyLEV4][$summValue]['Очень похож на'] = $summValueOriginal;
+                                                                    }
+
+                                                                    if (isset($value1[$keyLEV2][$keyLEV3][$keyLEV4][$keyLEV5])) {
+                                                                        unset($value1[$keyLEV2][$keyLEV3][$keyLEV4][$keyLEV5]);
+                                                                    }
+                                                                }
                                                             }
                                                         }
-//                                                            asort($value1[$keyLEV2][$keyLEV3][$keyLEV4]);
                                                     }
                                                 }
                                             }
@@ -385,105 +430,225 @@ function section3decoding($array) {
                     }
                 }
             } else {
-
-            }
-
-            $result[$key1] = $value1;
-//            print_r($result);
-        }
-    }
-    return $result;
-}
-
-function section8decoding($array) {
-    $result = [];
-
-
-//    return $result;
-    if (is_array($array) && count($array)) {
-        foreach ($array as $key1 => $value1) {
-            die(var_dump($key1));
-            if (is_array($value1) && count($value1)) {
-                foreach ($value1 as $keyLEV2 => $valueLEV2) {
-//                    asort($valueLEV2);
-                    if (is_array($valueLEV2) && count($valueLEV2)) {
-                        foreach ($valueLEV2 as $keyLEV3 => $valueLEV3) {
-                            $counter = 0;
-                            foreach ($valueLEV3 as $keyLEV4 => $valueLEV4) {
-//                    var_dump($valueLEV4);
-                                if (is_array($valueLEV3) && count($valueLEV3)) {
-                                    $checkForMoneySumm = FALSE;
-                                    if (is_array($valueLEV4) && count($valueLEV4)) {
-                                        foreach (array_keys($valueLEV4) as $innerKey => $moneySumm) {
-                                            if (strpos($moneySumm, 'СуммаДенСредств') !== FALSE) {
-                                                $checkForMoneySumm = $moneySumm;
-                                                $moneyValue = $valueLEV4[$checkForMoneySumm];
-                                                $moneyValueOriginal = $valueLEV4[$checkForMoneySumm];
-                                                if (isset($value1[$keyLEV2][$keyLEV3][$valueLEV4[$checkForMoneySumm]])) {
-                                                    $counter++;
-                                                    $moneyValue = $moneyValue . '-----' . $counter;
-//                                                                var_dump($valueLEV5);
-//                                                    echo $counter;
-//                                                                echo $checkKeysForISIN;
-//                                                    echo '<br>';
-                                                } else {
-                                                    $counter = 0;
-                                                }
-                                                $value1[$keyLEV2][$keyLEV3][$moneyValue] = $array[$key1][$keyLEV2][$keyLEV3][$keyLEV4];
-                                                $value1[$keyLEV2][$keyLEV3][$valueLEV4[$checkForMoneySumm]]['isISIN'] = true;
-                                                if ($counter > 0) {
-                                                    $value1[$keyLEV2][$keyLEV3][$moneyValue]['это дубль'] = 'да';
-                                                    $value1[$keyLEV2][$keyLEV3][$moneyValue]['Очень похож на'] = $moneyValueOriginal;
-                                                }
-//                                                echo $keyLEV3;
-                                                $value1[$keyLEV2][$keyLEV3]['containsISIN'][$moneyValue] = $valueLEV4[$checkForMoneySumm];
-                                                if (isset($value1[$keyLEV2][$keyLEV3][$keyLEV4])) {
-                                                    unset($value1[$keyLEV2][$keyLEV3][$keyLEV4]);
+                if ($key1 == 'Подраздел1_ДенСредства' || $key1 == 'Подраздел8ДебиторскаяЗадолж' || $key1 == 'Подраздел6ДенежТребования') {
+                    //Группировать по сумме
+                    if (is_array($value1) && count($value1)) {
+                        foreach ($value1 as $keyLEV2 => $valueLEV2) {
+                            if (is_array($valueLEV2) && count($valueLEV2)) {
+                                foreach ($valueLEV2 as $keyLEV3 => $valueLEV3) {
+                                    $counter = 0;
+                                    foreach ($valueLEV3 as $keyLEV4 => $valueLEV4) {
+                                        if (is_array($valueLEV3) && count($valueLEV3)) {
+                                            $checkForMoneySumm = FALSE;
+                                            if (is_array($valueLEV4) && count($valueLEV4)) {
+                                                foreach (array_keys($valueLEV4) as $innerKey => $moneySumm) {
+                                                    if (strpos($moneySumm, 'СуммаДенСред') !== FALSE) {
+                                                        $checkForMoneySumm = $moneySumm;
+                                                        $moneyValue = $valueLEV4[$checkForMoneySumm];
+                                                        $moneyValueOriginal = $valueLEV4[$checkForMoneySumm];
+                                                        if (isset($value1[$keyLEV2][$keyLEV3][$valueLEV4[$checkForMoneySumm]])) {
+                                                            $counter++;
+                                                            $moneyValue = $moneyValue . '-----' . $counter;
+                                                        } else {
+                                                            $counter = 0;
+                                                        }
+                                                        $value1[$keyLEV2][$keyLEV3][$moneyValue] = $array[$key1][$keyLEV2][$keyLEV3][$keyLEV4];
+                                                        $value1[$keyLEV2][$keyLEV3][$valueLEV4[$checkForMoneySumm]]['Группировка по сумме'] = true;
+                                                        $value1[$keyLEV2][$keyLEV3][$moneyValue]['Группировка по сумме'] = true;
+                                                        if ($counter > 0) {
+                                                            $value1[$keyLEV2][$keyLEV3][$moneyValue]['это дубль'] = 'да';
+                                                            $value1[$keyLEV2][$keyLEV3][$moneyValue]['Очень похож на'] = $moneyValueOriginal;
+                                                        }
+                                                        if (isset($value1[$keyLEV2][$keyLEV3][$keyLEV4])) {
+                                                            unset($value1[$keyLEV2][$keyLEV3][$keyLEV4]);
+                                                        }
+                                                    }
                                                 }
                                             }
-//                                            var_dump($value1[$keyLEV2][$keyLEV3]);
-//                                                asort($value1[$keyLEV2][$keyLEV3]);
-                                        }
-                                    }
-                                    if ($checkForMoneySumm === FALSE && is_array($valueLEV4) && count($valueLEV4)) {
-                                        $counter = 0;
-                                        foreach ($valueLEV4 as $keyLEV5 => $valueLEV5) {
-                                            if (is_array($valueLEV4) && count($valueLEV4)) {
-                                                $checkForMoneySumm = FALSE;
-                                                if (is_array($valueLEV5) && count($valueLEV5)) {
-                                                    foreach (array_keys($valueLEV5) as $innerKey => $moneySumm) {
-                                                        if (strpos($moneySumm, 'КодISIN') !== FALSE) {
-                                                            $checkForMoneySumm = $moneySumm;
-                                                            $moneyValue = $valueLEV5[$checkForMoneySumm];
-                                                            $moneyValueOriginal = $valueLEV5[$checkForMoneySumm];
-                                                            if (isset($value1[$keyLEV2][$keyLEV3][$keyLEV4][$valueLEV5[$checkForMoneySumm]])) {
-                                                                $counter++;
-                                                                $moneyValue = $moneyValue . '-----' . $counter;
-//                                                                var_dump($valueLEV5);
-//                                                                echo $counter;
-//                                                                echo $checkKeysForISIN;
-//                                                                echo '<br>';
-                                                            } else {
-                                                                $counter = 0;
-                                                            }
-//                                                            $checkKeysForISIN=$checkKeysForISIN.'-----'.$counter;
-//                                                            }
-//                                                                var_dump($valueLEV5[$checkKeysForISIN]);
-                                                            $value1[$keyLEV2][$keyLEV3][$keyLEV4][$moneyValue] = $array[$key1][$keyLEV2][$keyLEV3][$keyLEV4][$keyLEV5];
-//                                                            die(var_dump($value1[$keyLEV2][$keyLEV3][$keyLEV4]));
-                                                            $value1[$keyLEV2][$keyLEV3][$keyLEV4][$valueLEV5[$checkForMoneySumm]]['isISIN'] = true;
-                                                            if ($counter > 0) {
-                                                                $value1[$keyLEV2][$keyLEV3][$keyLEV4][$moneyValue]['это дубль'] = 'да';
-                                                                $value1[$keyLEV2][$keyLEV3][$keyLEV4][$moneyValue]['очень похож на'] = $moneyValueOriginal;
-                                                            }
-                                                            $value1[$keyLEV2][$keyLEV3][$keyLEV4]['containsISIN'][$moneyValue] = $valueLEV5[$checkForMoneySumm];
+                                            if ($checkForMoneySumm === FALSE && is_array($valueLEV4) && count($valueLEV4)) {
+                                                $counter = 0;
+                                                foreach ($valueLEV4 as $keyLEV5 => $valueLEV5) {
+                                                    if (is_array($valueLEV4) && count($valueLEV4)) {
+                                                        $checkForMoneySumm = FALSE;
+                                                        if (is_array($valueLEV5) && count($valueLEV5)) {
+                                                            foreach (array_keys($valueLEV5) as $innerKey => $moneySumm) {
+                                                                if (strpos($moneySumm, 'СуммаДенСред') !== FALSE) {
+                                                                    $checkForMoneySumm = $moneySumm;
+                                                                    $moneyValue = $valueLEV5[$checkForMoneySumm];
+                                                                    $moneyValueOriginal = $valueLEV5[$checkForMoneySumm];
+                                                                    if (isset($value1[$keyLEV2][$keyLEV3][$keyLEV4][$valueLEV5[$checkForMoneySumm]])) {
+                                                                        $counter++;
+                                                                        $moneyValue = $moneyValue . '-----' . $counter;
+                                                                    } else {
+                                                                        $counter = 0;
+                                                                    }
+                                                                    $value1[$keyLEV2][$keyLEV3][$keyLEV4][$moneyValue] = $array[$key1][$keyLEV2][$keyLEV3][$keyLEV4][$keyLEV5];
+                                                                    $value1[$keyLEV2][$keyLEV3][$keyLEV4][$valueLEV5[$checkForMoneySumm]]['Группировка по сумме'] = true;
+                                                                    $value1[$keyLEV2][$keyLEV3][$keyLEV4][$moneyValue]['Группировка по сумме'] = true;
+                                                                    if ($counter > 0) {
+                                                                        $value1[$keyLEV2][$keyLEV3][$keyLEV4][$moneyValue]['это дубль'] = 'да';
+                                                                        $value1[$keyLEV2][$keyLEV3][$keyLEV4][$moneyValue]['очень похож на'] = $moneyValueOriginal;
+                                                                    }
 
-                                                            if (isset($value1[$keyLEV2][$keyLEV3][$keyLEV4][$keyLEV5])) {
-                                                                unset($value1[$keyLEV2][$keyLEV3][$keyLEV4][$keyLEV5]);
+                                                                    if (isset($value1[$keyLEV2][$keyLEV3][$keyLEV4][$keyLEV5])) {
+                                                                        unset($value1[$keyLEV2][$keyLEV3][$keyLEV4][$keyLEV5]);
+                                                                    }
+                                                                }
                                                             }
                                                         }
                                                     }
-//                                                            asort($value1[$keyLEV2][$keyLEV3][$keyLEV4]);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    if ($key1 == 'Подраздел4НедвижИмущ') {
+                        //Группировать по кадастровому номеру
+                        if (is_array($value1) && count($value1)) {
+                            foreach ($value1 as $keyLEV2 => $valueLEV2) {
+                                if (is_array($valueLEV2) && count($valueLEV2)) {
+                                    foreach ($valueLEV2 as $keyLEV3 => $valueLEV3) {
+                                        $counter = 0;
+                                        foreach ($valueLEV3 as $keyLEV4 => $valueLEV4) {
+                                            if (is_array($valueLEV3) && count($valueLEV3)) {
+                                                $checkForKadastrNumder = FALSE;
+                                                if (is_array($valueLEV4) && count($valueLEV4)) {
+                                                    foreach (array_keys($valueLEV4) as $innerKey => $kadastrNumder) {
+                                                        if (strpos($kadastrNumder, 'КадастрНомер') !== FALSE) {
+                                                            $checkForKadastrNumder = $kadastrNumder;
+                                                            $kadastrNumderValue = $valueLEV4[$checkForKadastrNumder];
+                                                            $kadastrNumderValueOriginal = $valueLEV4[$checkForKadastrNumder];
+                                                            if (isset($value1[$keyLEV2][$keyLEV3][$valueLEV4[$checkForKadastrNumder]])) {
+                                                                $counter++;
+                                                                $kadastrNumderValue = $kadastrNumderValue . '-----' . $counter;
+                                                            } else {
+                                                                $counter = 0;
+                                                            }
+                                                            $value1[$keyLEV2][$keyLEV3][$kadastrNumderValue] = $array[$key1][$keyLEV2][$keyLEV3][$keyLEV4];
+                                                            $value1[$keyLEV2][$keyLEV3][$valueLEV4[$checkForKadastrNumder]]['Группировка по кадастровому номеру'] = true;
+                                                            $value1[$keyLEV2][$keyLEV3][$kadastrNumderValue]['Группировка по кадастровому номеру'] = true;
+                                                            if ($counter > 0) {
+                                                                $value1[$keyLEV2][$keyLEV3][$kadastrNumderValue]['это дубль'] = 'да';
+                                                                $value1[$keyLEV2][$keyLEV3][$kadastrNumderValue]['Очень похож на'] = $kadastrNumderValueOriginal;
+                                                            }
+                                                            if (isset($value1[$keyLEV2][$keyLEV3][$keyLEV4])) {
+                                                                unset($value1[$keyLEV2][$keyLEV3][$keyLEV4]);
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                                if ($checkForKadastrNumder === FALSE && is_array($valueLEV4) && count($valueLEV4)) {
+                                                    $counter = 0;
+                                                    foreach ($valueLEV4 as $keyLEV5 => $valueLEV5) {
+                                                        if (is_array($valueLEV4) && count($valueLEV4)) {
+                                                            $checkForKadastrNumder = FALSE;
+                                                            if (is_array($valueLEV5) && count($valueLEV5)) {
+                                                                foreach (array_keys($valueLEV5) as $innerKey => $kadastrNumder) {
+                                                                    if (strpos($kadastrNumder, 'КадастрНомер') !== FALSE) {
+                                                                        $checkForKadastrNumder = $kadastrNumder;
+                                                                        $kadastrNumderValue = $valueLEV5[$checkForKadastrNumder];
+                                                                        $kadastrNumderValueOriginal = $valueLEV5[$checkForKadastrNumder];
+                                                                        if (isset($value1[$keyLEV2][$keyLEV3][$keyLEV4][$valueLEV5[$checkForKadastrNumder]])) {
+                                                                            $counter++;
+                                                                            $kadastrNumderValue = $kadastrNumderValue . '-----' . $counter;
+                                                                        } else {
+                                                                            $counter = 0;
+                                                                        }
+                                                                        $value1[$keyLEV2][$keyLEV3][$keyLEV4][$kadastrNumderValue] = $array[$key1][$keyLEV2][$keyLEV3][$keyLEV4][$keyLEV5];
+                                                                        $value1[$keyLEV2][$keyLEV3][$keyLEV4][$valueLEV5[$checkForKadastrNumder]]['Группировка по кадастровому номеру'] = true;
+                                                                        $value1[$keyLEV2][$keyLEV3][$keyLEV4][$kadastrNumderValue]['Группировка по кадастровому номеру'] = true;
+                                                                        if ($counter > 0) {
+                                                                            $value1[$keyLEV2][$keyLEV3][$keyLEV4][$kadastrNumderValue]['это дубль'] = 'да';
+                                                                            $value1[$keyLEV2][$keyLEV3][$keyLEV4][$kadastrNumderValue]['очень похож на'] = $kadastrNumderValueOriginal;
+                                                                        }
+                                                                        if (isset($value1[$keyLEV2][$keyLEV3][$keyLEV4][$keyLEV5])) {
+                                                                            unset($value1[$keyLEV2][$keyLEV3][$keyLEV4][$keyLEV5]);
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        if ($key1 == 'Подраздел7ИноеИмущ') {
+                            //Группировать по ОГРН
+                            if (is_array($value1) && count($value1)) {
+                                foreach ($value1 as $keyLEV2 => $valueLEV2) {
+                                    if (is_array($valueLEV2) && count($valueLEV2)) {
+                                        foreach ($valueLEV2 as $keyLEV3 => $valueLEV3) {
+                                            $counter = 0;
+                                            foreach ($valueLEV3 as $keyLEV4 => $valueLEV4) {
+                                                if (is_array($valueLEV3) && count($valueLEV3)) {
+                                                    $checkKeysForOGRN = FALSE;
+                                                    if (is_array($valueLEV4) && count($valueLEV4)) {
+                                                        foreach (array_keys($valueLEV4) as $innerKey => $OGRN) {
+                                                            if (strpos($OGRN, 'ОГРНОбщ') !== FALSE) {
+                                                                $checkKeysForOGRN = $OGRN;
+                                                                $ogrnCode = $valueLEV4[$checkKeysForOGRN];
+                                                                $ogrnCodeOriginal = $valueLEV4[$checkKeysForOGRN];
+                                                                if (isset($value1[$keyLEV2][$keyLEV3][$valueLEV4[$checkKeysForOGRN]])) {
+                                                                    $counter++;
+                                                                    $ogrnCode = $ogrnCode . '-----' . $counter;
+                                                                } else {
+                                                                    $counter = 0;
+                                                                }
+                                                                $value1[$keyLEV2][$keyLEV3][$ogrnCode] = $array[$key1][$keyLEV2][$keyLEV3][$keyLEV4];
+                                                                $value1[$keyLEV2][$keyLEV3][$valueLEV4[$checkKeysForOGRN]]['Группировка по ОГРН'] = true;
+                                                                $value1[$keyLEV2][$keyLEV3][$ogrnCode]['Группировка по ОГРН'] = true;
+                                                                if ($counter > 0) {
+                                                                    $value1[$keyLEV2][$keyLEV3][$ogrnCode]['это дубль'] = 'да';
+                                                                    $value1[$keyLEV2][$keyLEV3][$ogrnCode]['Очень похож на'] = $ogrnCodeOriginal;
+                                                                }
+                                                                if (isset($value1[$keyLEV2][$keyLEV3][$keyLEV4])) {
+                                                                    unset($value1[$keyLEV2][$keyLEV3][$keyLEV4]);
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                    if ($checkKeysForOGRN === FALSE && is_array($valueLEV4) && count($valueLEV4)) {
+                                                        $counter = 0;
+                                                        foreach ($valueLEV4 as $keyLEV5 => $valueLEV5) {
+                                                            if (is_array($valueLEV4) && count($valueLEV4)) {
+                                                                $checkKeysForOGRN = FALSE;
+                                                                if (is_array($valueLEV5) && count($valueLEV5)) {
+                                                                    foreach (array_keys($valueLEV5) as $innerKey => $OGRN) {
+                                                                        if (strpos($OGRN, 'ОГРНОбщ') !== FALSE) {
+                                                                            $checkKeysForOGRN = $OGRN;
+                                                                            $ogrnCode = $valueLEV5[$checkKeysForOGRN];
+                                                                            $ogrnCodeOriginal = $valueLEV5[$checkKeysForOGRN];
+                                                                            if (isset($value1[$keyLEV2][$keyLEV3][$keyLEV4][$valueLEV5[$checkKeysForOGRN]])) {
+                                                                                $counter++;
+                                                                                $ogrnCode = $ogrnCode . '-----' . $counter;
+                                                                            } else {
+                                                                                $counter = 0;
+                                                                            }
+                                                                            $value1[$keyLEV2][$keyLEV3][$keyLEV4][$ogrnCode] = $array[$key1][$keyLEV2][$keyLEV3][$keyLEV4][$keyLEV5];
+                                                                            $value1[$keyLEV2][$keyLEV3][$keyLEV4][$valueLEV5[$checkKeysForOGRN]]['Группировка по ОГРН'] = true;
+                                                                            $value1[$keyLEV2][$keyLEV3][$keyLEV4][$ogrnCode]['Группировка по ОГРН'] = true;
+                                                                            if ($counter > 0) {
+                                                                                $value1[$keyLEV2][$keyLEV3][$keyLEV4][$ogrnCode]['это дубль'] = 'да';
+                                                                                $value1[$keyLEV2][$keyLEV3][$keyLEV4][$ogrnCode]['Очень похож на'] = $ogrnCodeOriginal;
+                                                                            }
+                                                                            if (isset($value1[$keyLEV2][$keyLEV3][$keyLEV4][$keyLEV5])) {
+                                                                                unset($value1[$keyLEV2][$keyLEV3][$keyLEV4][$keyLEV5]);
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
                                                 }
                                             }
                                         }
@@ -496,7 +661,92 @@ function section8decoding($array) {
             }
 
             $result[$key1] = $value1;
-//            print_r($result);
+        }
+    }
+    return $result;
+}
+
+function section4decoding($array) {
+    $result = [];
+
+    if (is_array($array) && count($array)) {
+        foreach ($array as $key1 => $value1) {
+            if (is_array($value1) && count($value1)) {
+                foreach ($value1 as $keyLEV2 => $valueLEV2) {
+                    if (is_array($valueLEV2) && count($valueLEV2)) {
+                        foreach ($valueLEV2 as $keyLEV3 => $valueLEV3) {
+                            $counter = 0;
+                            foreach ($valueLEV3 as $keyLEV4 => $valueLEV4) {
+                                if (is_array($valueLEV3) && count($valueLEV3)) {
+                                    $checkForMoneySumm = FALSE;
+                                    if (is_array($valueLEV4) && count($valueLEV4)) {
+                                        foreach (array_keys($valueLEV4) as $innerKey => $moneySumm) {
+                                            if (strpos($moneySumm, 'КредиторсЗадолж') !== FALSE) {
+                                                $checkForMoneySumm = $moneySumm;
+                                                $moneyValue = $valueLEV4[$checkForMoneySumm];
+                                                $moneyValueOriginal = $valueLEV4[$checkForMoneySumm];
+                                                if (isset($value1[$keyLEV2][$keyLEV3][$valueLEV4[$checkForMoneySumm]])) {
+                                                    $counter++;
+                                                    $moneyValue = $moneyValue . '-----' . $counter;
+                                                } else {
+                                                    $counter = 0;
+                                                }
+                                                $value1[$keyLEV2][$keyLEV3][$moneyValue] = $array[$key1][$keyLEV2][$keyLEV3][$keyLEV4];
+                                                $value1[$keyLEV2][$keyLEV3][$valueLEV4[$checkForMoneySumm]]['Группировка по сумме кредиторской задолженности'] = true;
+                                                $value1[$keyLEV2][$keyLEV3][$moneyValue]['Группировка по сумме кредиторской задолженности'] = true;
+                                                if ($counter > 0) {
+                                                    $value1[$keyLEV2][$keyLEV3][$moneyValue]['это дубль'] = 'да';
+                                                    $value1[$keyLEV2][$keyLEV3][$moneyValue]['Очень похож на'] = $moneyValueOriginal;
+                                                }
+                                                if (isset($value1[$keyLEV2][$keyLEV3][$keyLEV4])) {
+                                                    unset($value1[$keyLEV2][$keyLEV3][$keyLEV4]);
+                                                }
+                                            }
+                                        }
+                                    }
+                                    if ($checkForMoneySumm === FALSE && is_array($valueLEV4) && count($valueLEV4)) {
+                                        $counter = 0;
+                                        foreach ($valueLEV4 as $keyLEV5 => $valueLEV5) {
+                                            if (is_array($valueLEV4) && count($valueLEV4)) {
+                                                $checkForMoneySumm = FALSE;
+                                                if (is_array($valueLEV5) && count($valueLEV5)) {
+                                                    foreach (array_keys($valueLEV5) as $innerKey => $moneySumm) {
+                                                        if (strpos($moneySumm, 'КредиторсЗадолж') !== FALSE) {
+                                                            $checkForMoneySumm = $moneySumm;
+                                                            $moneyValue = $valueLEV5[$checkForMoneySumm];
+                                                            $moneyValueOriginal = $valueLEV5[$checkForMoneySumm];
+                                                            if (isset($value1[$keyLEV2][$keyLEV3][$keyLEV4][$valueLEV5[$checkForMoneySumm]])) {
+                                                                $counter++;
+                                                                $moneyValue = $moneyValue . '-----' . $counter;
+                                                            } else {
+                                                                $counter = 0;
+                                                            }
+                                                            $value1[$keyLEV2][$keyLEV3][$keyLEV4][$moneyValue] = $array[$key1][$keyLEV2][$keyLEV3][$keyLEV4][$keyLEV5];
+                                                            $value1[$keyLEV2][$keyLEV3][$keyLEV4][$valueLEV5[$checkForMoneySumm]]['Группировка по сумме кредиторской задолженности'] = true;
+                                                            $value1[$keyLEV2][$keyLEV3][$keyLEV4][$moneyValue]['Группировка по сумме кредиторской задолженности'] = true;
+                                                            if ($counter > 0) {
+                                                                $value1[$keyLEV2][$keyLEV3][$keyLEV4][$moneyValue]['это дубль'] = 'да';
+                                                                $value1[$keyLEV2][$keyLEV3][$keyLEV4][$moneyValue]['очень похож на'] = $moneyValueOriginal;
+                                                            }
+                                                            $value1[$keyLEV2][$keyLEV3][$keyLEV4]['Содержит Суммы'][$moneyValue] = $valueLEV5[$checkForMoneySumm];
+
+                                                            if (isset($value1[$keyLEV2][$keyLEV3][$keyLEV4][$keyLEV5])) {
+                                                                unset($value1[$keyLEV2][$keyLEV3][$keyLEV4][$keyLEV5]);
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            $result[$key1] = $value1;
         }
     }
     return $result;
@@ -504,101 +754,63 @@ function section8decoding($array) {
 
 function srtringsIdentical($str1, $str2) {
     $result = false;
-//    var_dump($str1);
-//    var_dump($str2);
-//    var_dump($result);
-
-    $vocabularySRC = array(
-        'Решение о выпуске',
-        '',
-        'обыкновенная',
-        '00.00.0000',
-        '00.00.0000',
-        'не установлен',
-        '119049, г. Москва, ул.Шаболовка, д.10, корпус 2',
-        'по купонному доходу по ценным бумагам',
-        '119034,ГОРОД МОСКВА,,,,ПЕРЕУЛОК ГАГАРИНСКИЙ,3',
-        'Привилегированные акции',
-        'Обязательство по выплате дивидендов'
-    );
-    $vocabularyDEST = array(
-        'Условия выпуска ценных бумаг',
-        '',
-        'Обыкновенные акции',
-        'не установлена',
-        'не установлен',
-        '00,00,0000',
-        '119049, г. МосКва, ул,Шаболовка, д.10,корп.2',
-        'Накопленный купонный доход',
-        '119034, г. Москва, Гагаринский пер., д.3.',
-        'привилегированная'
-        ,
-        'Дивиденды начисленные'
-    );
-
-
     $encodedCurrentVocab = getExternalVocab();
-    foreach ($encodedCurrentVocab as $value) {
-//        var_dump($value);
-//        die(print_r(mb_convert_encoding($value[0],"utf-8")));
-//        die(print_r(mb_convert_encoding($value[0],'UTF-8',  mb_detect_encoding($value[0]))));
-        $vocabularySRC[] = $value[0];
-        $vocabularyDEST[] = $value[1];
-    }
-//die(var_dump($vocabularyDEST));
-    $str1 = trim($str1);
-    $str2 = trim($str2);
-    $pattern = array('/,/', '/\\s{1,}/', '/«/', '/»/');
-    $replacement = array('.', '', '"', '"');
+    foreach ($encodedCurrentVocab as $ruleIndex => $rule) {
+        if ($result == FALSE) {
+            $pattern = array('/,/', '/\\s{1,}/', '/«/', '/»/', '/"/');
+            $replacement = array('.', '', '"', '"', '');
+            $str1 = trim($str1);
+            $str2 = trim($str2);
+            $str1 = mb_strtolower($str1);
+            $str2 = mb_strtolower($str2);
+            $str1 = preg_replace($pattern, $replacement, $str1);
+            $str2 = preg_replace($pattern, $replacement, $str2);
 
+            $ruleSrt1 = $rule[0];
+            $ruleSrt2 = $rule[1];
+            $ruleSrt1 = mb_strtolower($ruleSrt1);
+            $ruleSrt2 = mb_strtolower($ruleSrt2);
+            $ruleSrt1 = preg_replace($pattern, $replacement, $ruleSrt1);
+            $ruleSrt2 = preg_replace($pattern, $replacement, $ruleSrt2);
 
-    foreach ($vocabularySRC as $phrase) {
-        if (trim($phrase) != '') {
-            $phrase = preg_replace('/\\s{1,}/', '', $phrase);
-            $pattern[] = '/' . str_replace(',', '.', trim($phrase)) . '/i';
-        } else {
-            $pattern[] = '/еслиДажеЭтоДобавильВОтчетностьТоЯТогдаНеЗнаюЧтоДелать/';
+            if ($ruleSrt1 == $str1) {
+                if ($str2 == $ruleSrt2) {
+                    $result = true;
+                }
+            }
+            if ($result == FALSE) {
+                if ($ruleSrt2 == $str1) {
+                    if ($str2 == $ruleSrt1) {
+                        $result = true;
+                    }
+                }
+            }
+            if ($result == FALSE) {
+                if ($ruleSrt1 == $str2) {
+                    if ($str1 == $ruleSrt2) {
+                        $result = true;
+                    }
+                }
+                if ($result == FALSE) {
+                    if ($ruleSrt2 == $str2) {
+                        if ($str1 == $ruleSrt1) {
+                            $result = true;
+                        }
+                    }
+                }
+            }
         }
     }
-    foreach ($vocabularyDEST as $phrase) {
-        if (trim($phrase) != '') {
-            $phrase = preg_replace('/\\s{1,}/', '', $phrase);
-            $replacement[] = str_replace(',', '.', trim($phrase));
-        } else {
-            $replacement[] = 'ТУТ УЖАСНАЯ ОШИБКА!!!!!!!!!!!!!!!!!';
-        }
-    }
-
-//    var_dump($pattern);
-//    die(var_dump($replacement));
-//    var_dump($replacement);
-//die(var_dump($pattern));
-    $str1 = preg_replace($pattern, $replacement, $str1);
-    $str2 = preg_replace($pattern, $replacement, $str2);
-    $str1 = mb_strtolower($str1);
-    $str2 = mb_strtolower($str2);
-
-
     if ($str1 == $str2) {
         $result = true;
     }
-
-//    var_dump($str1);
-//    var_dump($str2);
-//    var_dump($result);
-//    echo '<hr>';
     return $result;
 }
 
 function compareString($string1, $string2, $key1) {
     $result = array();
-
-//    var_dump($string1,$string2,$key1);
-
     $result['value1'] = $string1;
     $result['value2'] = $string2;
-//    $result['isNotHeader'] = true;
-
     $result['diff'] = 'different';
     $parsingError = FALSE;
     if (is_array($string1)) {
@@ -625,108 +837,10 @@ function compareString($string1, $string2, $key1) {
         if ($isIdentical === true) {
             $result['diff'] = 'identical';
         }
-
-
-//
-//$vocabularySRC = array(
-//    'Условия выпуска ценных бумаг'
-//        )
-//
-//;
-//$vocabularyDEST = array(
-//    'Условия выпуска ценных бумаг'
-//        )
-//
-//;
-//
-//        $string1 = preg_replace('/\s{2,}/', ' ', $string1);
-//        $string2 = preg_replace('/\s{2,}/', ' ', $string2);
-//        $string1 = preg_replace('/00.00.0000/', 'не установлена', $string1);
-//
-//
-//
-//
-//
-//        if ($string1) == ($string2)) {
-//            $result['diff'] = 'identical';
-//        }else {
-//
-//            $stringToFloat1 = str_replace(',', '.', $string1);
-//            $stringToFloat2 = str_replace(',', '.', $string2);
-//            if ($stringToFloat1 == $stringToFloat2) {
-//                $result['diff'] = 'identical';
-//            } else {
-//                $quotes = ['«', '»'];
-//                $stringQut1 = str_replace($quotes, '"', $string1);
-//                $stringQut2 = str_replace($quotes, '"', $string2);
-//
-//                if ($stringQut1 == $stringQut2) {
-//                    $result['diff'] = 'identical';
-//                }
-//            }
-//        }
-//        else {
-//
-//            $stringToFloat1 = str_replace(',', '.', $string1);
-//            $stringToFloat2 = str_replace(',', '.', $string2);
-//            if ($stringToFloat1 == $stringToFloat2) {
-//                $result['diff'] = 'identical';
-//            } else {
-//                $quotes = ['«', '»'];
-//                $stringQut1 = str_replace($quotes, '"', $string1);
-//                $stringQut2 = str_replace($quotes, '"', $string2);
-//
-//                if ($stringQut1 == $stringQut2) {
-//                    $result['diff'] = 'identical';
-//                }
-//            }
-//        }
     } else {
         $result['diff'] = 'impossible';
     }
-//    echo '<hr>';
-//    var_dump($string1, $string2, $key1, $result['diff'], $result['parsingErrors']);
-//    echo '<hr>';
-//    echo '<hr>';
     return $result;
 }
 
 die();
-
-
-
-
-echo '<pre>';
-//var_dump($resultArray1);
-//    var_dump($value1);
-echo '</pre>';
-
-
-
-
-
-
-echo '<div>';
-echo '<div style="    width: 50%;
-    display: inline-block;
-    position: relative;
-    top: 0;
-    vertical-align: top;">';
-//echo '<pre>';
-//
-//print_r($array1);
-//echo '</pre>';
-echo '</div>';
-echo '<div style="    width: 50%;
-    display: inline-block;
-    position: relative;
-    top: 0;
-    vertical-align: top;">';
-//echo '<pre>';
-//print_r($array2);
-//echo '</pre>';
-echo '</div>';
-echo '</div>';
-$result1 = [];
-$result2 = [];
-
