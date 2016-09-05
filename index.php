@@ -40,10 +40,11 @@
     }
     #version{
         background-color: lightgray;
-        width: 10%;
+        width: 20%;
         position: absolute;
         top: 0;
         right: 0;
+        font-size: 0.8rem;
     }
 </style>
 <div id="version">v.1.3 04.09.2016
