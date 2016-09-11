@@ -8,7 +8,7 @@
     }
 </style>
 <?php
-echo 'Это словарь соответствий<br>';
+echo 'Это словарь соответствий. Последнее изменение было: '. date('d.m.Y в H:i:s',preg_replace('/\\D/', '',basename(getLastFilename()))).'<br>';
 echo '<pre>';
 //die(var_dump($_GET));
 if (isset($_GET['resaveVocab']) && $_GET['resaveVocab'] == 'yes') {
