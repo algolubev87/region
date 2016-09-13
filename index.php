@@ -47,11 +47,11 @@
         font-size: 0.7rem;
     }
 </style>
-<div id="version">v.1.4 11.09.2016
+<div id="version">v.1.5 13.09.2016
     <br>05.09.2016 Пофиксил ошибку группировки по ISIN
     <br>11.09.2016 Пофиксил ошибку группировки по стоимости векселей
     <br>11.09.2016 Немного доработана вёрстка. Теперь ячейки в строке не объединяются.
-    <br>11.09.2016 Пофиксил ошибку группировки по ISIN. Если уже сгруппированно, то не группируется по сумме.
+    <br>13.09.2016 Пофиксил ошибку группировки по ISIN. Если уже сгруппированно, то не группируется по сумме.
 </div>
 <form method="POST" name="111" enctype="multipart/form-data">
     <label for="file1input">файл с данными от УК
@@ -504,29 +504,29 @@ function section3decoding($array) {
                                                             unset($value1[$keyLEV2][$keyLEV3][$keyLEV4]);
                                                         }
                                                     }
-                                                    /* if (strpos($moneySummDenSred, 'Строка_ДенежТреб') !== FALSE) {
-                                                      var_dump($moneySummDenSred);
-                                                      $checkForMoneySummDenSred = $moneySummDenSred;
-                                                      $moneyValue = $valueLEV4[$checkForMoneySummDenSred];
-                                                      $moneyValueOriginal = $valueLEV4[$checkForMoneySummDenSred];
-                                                      if (isset($value1[$keyLEV2][$keyLEV3][$valueLEV4[$checkForMoneySummDenSred]])) {
-                                                      $counter++;
-                                                      $moneyValue = $moneyValue . '-----' . $counter;
-                                                      } else {
-                                                      //                                                            $counter = 0;
-                                                      }
-                                                      $value1[$keyLEV2][$keyLEV3][$moneyValue] = $array[$key1][$keyLEV2][$keyLEV3][$keyLEV4];
-                                                      $value1[$keyLEV2][$keyLEV3][$valueLEV4[$checkForMoneySummDenSred]]['Группировка по стоимости векселя'] = true;
-                                                      $value1[$keyLEV2][$keyLEV3][$moneyValue]['Группировка по стоимости векселя'] = true;
-                                                      if ($counter > 0) {
-                                                      $value1[$keyLEV2][$keyLEV3][$moneyValue]['это дубль'] = 'да';
-                                                      $value1[$keyLEV2][$keyLEV3][$moneyValue]['Очень похож на'] = $moneyValueOriginal;
-                                                      }
-                                                      if (isset($value1[$keyLEV2][$keyLEV3][$keyLEV4])) {
-                                                      unset($value1[$keyLEV2][$keyLEV3][$keyLEV4]);
-                                                      }
-                                                      } */
-                                                }
+//                                                        if (strpos($moneySummDenSred, 'Строка_ДенежТреб') !== FALSE) {
+//                                                            var_dump($moneySummDenSred);
+//                                                            $checkForMoneySummDenSred = $moneySummDenSred;
+//                                                            $moneyValue = $valueLEV4[$checkForMoneySummDenSred];
+//                                                            $moneyValueOriginal = $valueLEV4[$checkForMoneySummDenSred];
+//                                                            if (isset($value1[$keyLEV2][$keyLEV3][$valueLEV4[$checkForMoneySummDenSred]])) {
+//                                                                $counter++;
+//                                                                $moneyValue = $moneyValue . '-----' . $counter;
+//                                                            } else {
+//                                                                //                                                            $counter = 0;
+//                                                            }
+//                                                            $value1[$keyLEV2][$keyLEV3][$moneyValue] = $array[$key1][$keyLEV2][$keyLEV3][$keyLEV4];
+//                                                            $value1[$keyLEV2][$keyLEV3][$valueLEV4[$checkForMoneySummDenSred]]['Группировка по стоимости векселя'] = true;
+//                                                            $value1[$keyLEV2][$keyLEV3][$moneyValue]['Группировка по стоимости векселя'] = true;
+//                                                            if ($counter > 0) {
+//                                                                $value1[$keyLEV2][$keyLEV3][$moneyValue]['это дубль'] = 'да';
+//                                                                $value1[$keyLEV2][$keyLEV3][$moneyValue]['Очень похож на'] = $moneyValueOriginal;
+//                                                            }
+//                                                            if (isset($value1[$keyLEV2][$keyLEV3][$keyLEV4])) {
+//                                                                unset($value1[$keyLEV2][$keyLEV3][$keyLEV4]);
+//                                                            }
+//                                                        }
+                                                    }
                                                 if (is_array($valueLEV4) && count($valueLEV4)) {
                                                     $counter = 0;
                                                     foreach ($valueLEV4 as $keyLEV5 => $valueLEV5) {
