@@ -51,6 +51,7 @@
     <br>05.09.2016 Пофиксил ошибку группировки по ISIN
     <br>11.09.2016 Пофиксил ошибку группировки по стоимости векселей
     <br>11.09.2016 Немного доработана вёрстка. Теперь ячейки в строке не объединяются.
+    <br>11.09.2016 Пофиксил ошибку группировки по ISIN. Если уже сгруппированно, то не группируется по сумме.
 </div>
 <form method="POST" name="111" enctype="multipart/form-data">
     <label for="file1input">файл с данными от УК
@@ -64,6 +65,8 @@
     <br>
 </form>
 <?php
+//die(phpinfo());
+set_time_limit(3600);
 //echo '<pre>';
 //die('отладка');
 $filename1 = '';
@@ -175,7 +178,14 @@ function printResult($resultArray) {
         if (is_array($valueRes)) {
             if (count($valueRes)) {
                 if (!isset($valueRes['diff'])) {
-                    if (isset($valueRes['Группировка по ISIN']) || isset($valueRes['Группировка по сумме']) || isset($valueRes['Группировка по кадастровому номеру']) || isset($valueRes['Группировка по ОГРН']) || isset($valueRes['Группировка по сумме кредиторской задолженности']) || isset($valueRes['Группировка по стоимости векселя'])) {
+                    if (isset($valueRes['Группировка по ISIN']) ||
+                            isset($valueRes['Группировка по сумме']) ||
+                            isset($valueRes['Группировка по кадастровому номеру']) ||
+                            isset($valueRes['Группировка по ОГРН']) ||
+                            isset($valueRes['Группировка по сумме кредиторской задолженности']) ||
+                            isset($valueRes['Группировка по стоимости векселя']) ||
+                            isset($valueRes['Группировка по Оценочной Стоимости'])
+                    ) {
                         if ($keyRes == 'File') {
                             echo '<tr class="ISINheader"><td colspan="3">' . $keyRes . '</td><tr>';
                         } else {
@@ -198,7 +208,11 @@ function printResult($resultArray) {
                                                 if (isset($valueRes['Группировка по стоимости векселя']) && $valueRes['Группировка по стоимости векселя'] == true) {
                                                     $groupReason = 'Группировка по стоимости векселя';
                                                 } else {
-                                                    //место для новой группировки
+                                                    if (isset($valueRes['Группировка по Оценочной Стоимости']) && $valueRes['Группировка по Оценочной Стоимости'] == true) {
+                                                        $groupReason = 'Группировка по Оценочной Стоимости';
+                                                    } else {
+//место для новой группировки
+                                                    }
                                                 }
                                             }
                                         }
@@ -422,7 +436,7 @@ function section3decoding($array) {
                                                                     unset($value1[$keyLEV2][$keyLEV3][$keyLEV4][$keyLEV5]);
                                                                 }
                                                             } else {
-                                                                if (strpos($ISIN, 'Стоимость') !== FALSE) {
+                                                                if (strpos($ISIN, 'Стоимость') !== FALSE && $checkKeysForISIN === FALSE) {
                                                                     $checkKeysForSumm = $ISIN;
                                                                     $summValue = $valueLEV5[$checkKeysForSumm];
                                                                     $summValueOriginal = $valueLEV5[$checkKeysForSumm];
@@ -458,7 +472,7 @@ function section3decoding($array) {
                 }
             } else {
                 if ($key1 == 'Подраздел1_ДенСредства' || $key1 == 'Подраздел8ДебиторскаяЗадолж' || $key1 == 'Подраздел6ДенежТребования') {
-                    //Группировать по сумме
+//Группировать по сумме
                     if (is_array($value1) && count($value1)) {
                         foreach ($value1 as $keyLEV2 => $valueLEV2) {
                             if (is_array($valueLEV2) && count($valueLEV2)) {
@@ -490,8 +504,30 @@ function section3decoding($array) {
                                                             unset($value1[$keyLEV2][$keyLEV3][$keyLEV4]);
                                                         }
                                                     }
+                                                    /* if (strpos($moneySummDenSred, 'Строка_ДенежТреб') !== FALSE) {
+                                                      var_dump($moneySummDenSred);
+                                                      $checkForMoneySummDenSred = $moneySummDenSred;
+                                                      $moneyValue = $valueLEV4[$checkForMoneySummDenSred];
+                                                      $moneyValueOriginal = $valueLEV4[$checkForMoneySummDenSred];
+                                                      if (isset($value1[$keyLEV2][$keyLEV3][$valueLEV4[$checkForMoneySummDenSred]])) {
+                                                      $counter++;
+                                                      $moneyValue = $moneyValue . '-----' . $counter;
+                                                      } else {
+                                                      //                                                            $counter = 0;
+                                                      }
+                                                      $value1[$keyLEV2][$keyLEV3][$moneyValue] = $array[$key1][$keyLEV2][$keyLEV3][$keyLEV4];
+                                                      $value1[$keyLEV2][$keyLEV3][$valueLEV4[$checkForMoneySummDenSred]]['Группировка по стоимости векселя'] = true;
+                                                      $value1[$keyLEV2][$keyLEV3][$moneyValue]['Группировка по стоимости векселя'] = true;
+                                                      if ($counter > 0) {
+                                                      $value1[$keyLEV2][$keyLEV3][$moneyValue]['это дубль'] = 'да';
+                                                      $value1[$keyLEV2][$keyLEV3][$moneyValue]['Очень похож на'] = $moneyValueOriginal;
+                                                      }
+                                                      if (isset($value1[$keyLEV2][$keyLEV3][$keyLEV4])) {
+                                                      unset($value1[$keyLEV2][$keyLEV3][$keyLEV4]);
+                                                      }
+                                                      } */
                                                 }
-                                                if ($checkForMoneySummDenSred === FALSE && is_array($valueLEV4) && count($valueLEV4)) {
+                                                if (is_array($valueLEV4) && count($valueLEV4)) {
                                                     $counter = 0;
                                                     foreach ($valueLEV4 as $keyLEV5 => $valueLEV5) {
                                                         if (is_array($valueLEV4) && count($valueLEV4)) {
@@ -520,6 +556,9 @@ function section3decoding($array) {
                                                                             unset($value1[$keyLEV2][$keyLEV3][$keyLEV4][$keyLEV5]);
                                                                         }
                                                                     }
+                                                                    if (strpos($moneySummDenSred, 'Строка_ДенежТреб') !== FALSE) {
+                                                                        var_dump($moneySummDenSred);
+                                                                    }
                                                                 }
                                                             }
                                                         }
@@ -534,7 +573,7 @@ function section3decoding($array) {
                     }
                 } else {
                     if ($key1 == 'Подраздел4НедвижИмущ') {
-                        //Группировать по кадастровому номеру
+//Группировать по кадастровому номеру
                         if (is_array($value1) && count($value1)) {
                             foreach ($value1 as $keyLEV2 => $valueLEV2) {
                                 if (is_array($valueLEV2) && count($valueLEV2)) {
@@ -609,7 +648,7 @@ function section3decoding($array) {
                         }
                     } else {
                         if ($key1 == 'Подраздел7ИноеИмущ') {
-                            //Группировать по ОГРН
+//Группировать по ОГРН
                             if (is_array($value1) && count($value1)) {
                                 foreach ($value1 as $keyLEV2 => $valueLEV2) {
                                     if (is_array($valueLEV2) && count($valueLEV2)) {
